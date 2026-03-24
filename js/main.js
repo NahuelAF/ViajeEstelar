@@ -200,7 +200,6 @@ function mkSolarParticle(sunR, cx, cy) {
     life:        Math.random() * 40,
     maxLife:     Math.random() * 80 + 40,
     size:        Math.random() * 3 + 1,
-    /* ← colores amarillos/blancos, sin naranja fuerte */
     color: ['#fff7a0','#ffee66','#ffd700','#ffe680','#fffacd'][Math.floor(Math.random() * 5)],
     type: Math.random() < 0.3 ? 'flare' : 'particle',
   };
@@ -222,7 +221,6 @@ function drawProminence(cx, cy, sunR, angle, len, spread, t, alpha) {
   }
   ctx.lineTo(sunR, 0);
   const grad = ctx.createLinearGradient(sunR, 0, sunR + len, 0);
-  /* prominencias amarillas en vez de naranja-rojo */
   grad.addColorStop(0,   `rgba(255,240,80,${alpha})`);
   grad.addColorStop(0.4, `rgba(255,220,40,${alpha * 0.6})`);
   grad.addColorStop(1,   'rgba(255,200,0,0)');
@@ -233,7 +231,7 @@ function drawProminence(cx, cy, sunR, angle, len, spread, t, alpha) {
 
 /* ── INIT ── */
 function initJourney() {
-  const starCount   = isMobile ? 180 : 260;
+  const starCount   = isMobile ? 400 : 260;
   const phraseCount = isMobile ?  18 :  22;
   stars   = Array.from({ length: starCount   }, mkStar);
   phrases = Array.from({ length: phraseCount }, () => mkPhrase());
@@ -309,15 +307,14 @@ function loop(now) {
   ctx.globalAlpha = 1;
 
   /* ══════════════════════════════════════════
-     SOL — paleta amarilla, sin manchas, sin cruz
+     SOL — halos, rayos, prominencias y partículas
   ══════════════════════════════════════════ */
   const cx   = CX, cy = CY;
   const size = 18 + Math.pow(progress, 3) * 220;
   const t    = performance.now() * 0.001;
-  const sunVisible = Math.min(progress * 4, 1);  // fade-in suave al inicio
+  const sunVisible = Math.min(progress * 4, 1);
 
-  /* 1. HALOS volumétricos — tamaño reducido, amarillos */
-  // Halo exterior difuso (más pequeño que antes)
+  /* 1. HALOS volumétricos */
   const halo3 = ctx.createRadialGradient(cx, cy, size * 0.6, cx, cy, size * 4.5);
   halo3.addColorStop(0,   `rgba(255,240,80,${0.07 * sunVisible})`);
   halo3.addColorStop(0.4, `rgba(255,220,40,${0.04 * sunVisible})`);
@@ -325,7 +322,6 @@ function loop(now) {
   ctx.beginPath(); ctx.arc(cx, cy, size * 4.5, 0, Math.PI * 2);
   ctx.fillStyle = halo3; ctx.fill();
 
-  // Halo medio
   const halo2 = ctx.createRadialGradient(cx, cy, size * 0.75, cx, cy, size * 2.8);
   halo2.addColorStop(0,   `rgba(255,250,150,${0.16 * sunVisible})`);
   halo2.addColorStop(0.5, `rgba(255,230,80,${0.09 * sunVisible})`);
@@ -333,7 +329,6 @@ function loop(now) {
   ctx.beginPath(); ctx.arc(cx, cy, size * 2.8, 0, Math.PI * 2);
   ctx.fillStyle = halo2; ctx.fill();
 
-  // Atmósfera inmediata (muy pegada, bien brillante)
   const halo1 = ctx.createRadialGradient(cx, cy, size * 0.92, cx, cy, size * 1.7);
   halo1.addColorStop(0,   `rgba(255,255,200,${0.30 * sunVisible})`);
   halo1.addColorStop(0.6, `rgba(255,245,120,${0.14 * sunVisible})`);
@@ -341,7 +336,7 @@ function loop(now) {
   ctx.beginPath(); ctx.arc(cx, cy, size * 1.7, 0, Math.PI * 2);
   ctx.fillStyle = halo1; ctx.fill();
 
-  /* 2. RAYOS — más cortos y amarillos */
+  /* 2. RAYOS */
   const numRays = 20;
   ctx.save();
   for (let i = 0; i < numRays; i++) {
@@ -350,7 +345,6 @@ function loop(now) {
     const angle     = baseAngle + wobble;
     const isMain    = i % 4 === 0;
     const isMed     = i % 4 === 2;
-    // Longitudes reducidas (era 5.5/4.0/2.8 → ahora 3.5/2.5/1.8)
     const rayLen    = size * (isMain ? 3.5 : isMed ? 2.5 : 1.8) + Math.sin(t * 2 + i) * size * 0.15;
     const rayWidth  = isMain ? size * 0.18 : isMed ? size * 0.10 : size * 0.05;
 
@@ -371,27 +365,27 @@ function loop(now) {
                    * (0.8 + Math.sin(t * 2.5 + i) * 0.2)
                    * sunVisible;
     const rg = ctx.createLinearGradient(ax, ay, bx, by);
-    rg.addColorStop(0,   `rgba(255,255,210,${rayAlpha})`);
-    rg.addColorStop(0.35,`rgba(255,245,140,${rayAlpha * 0.55})`);
-    rg.addColorStop(0.75,`rgba(255,230,80,${rayAlpha * 0.20})`);
-    rg.addColorStop(1,   'rgba(255,210,0,0)');
+    rg.addColorStop(0,    `rgba(255,255,210,${rayAlpha})`);
+    rg.addColorStop(0.35, `rgba(255,245,140,${rayAlpha * 0.55})`);
+    rg.addColorStop(0.75, `rgba(255,230,80,${rayAlpha * 0.20})`);
+    rg.addColorStop(1,    'rgba(255,210,0,0)');
     ctx.fillStyle = rg;
     ctx.fill();
   }
   ctx.restore();
 
-  /* 3. PROMINENCIAS — amarillas */
+  /* 3. PROMINENCIAS */
   const promAngles = [0.4, 1.2, 2.1, 3.4, 4.8, 5.5];
   for (const pa of promAngles) {
     const angle   = pa + t * 0.08;
-    const len     = size * (0.5 + Math.sin(t * 1.3 + pa) * 0.3);   // más cortas
+    const len     = size * (0.5 + Math.sin(t * 1.3 + pa) * 0.3);
     const spread2 = size * (0.18 + Math.sin(t * 0.9 + pa * 2) * 0.08);
     const palpha  = 0.45 * sunVisible * (0.7 + Math.sin(t * 2 + pa) * 0.3);
     drawProminence(cx, cy, size, angle, len, spread2, t, palpha);
     drawProminence(cx, cy, size, angle + 0.15, len * 0.6, spread2 * 0.7, t, palpha * 0.45);
   }
 
-  /* 4. PARTÍCULAS ORBITALES ── */
+  /* 4. PARTÍCULAS ORBITALES */
   if (Math.random() < 0.35) {
     solarParticles.push(mkSolarParticle(size, cx, cy));
     if (solarParticles.length > 100) solarParticles.splice(0, 1);
@@ -431,22 +425,22 @@ function loop(now) {
     ctx.fill();
   }
 
-  /* 5. SUPERFICIE SOLAR — amarilla, SIN manchas solares */
+  /* 5. SUPERFICIE SOLAR — comentada (bola amarilla oculta) */
+  /*
   const body = ctx.createRadialGradient(
     cx - size * 0.25, cy - size * 0.28, size * 0.02,
     cx, cy, size
   );
-  body.addColorStop(0,    '#ffffff');   // núcleo blanco
-  body.addColorStop(0.08, '#fffff0');   // blanco puro
-  body.addColorStop(0.20, '#ffff99');   // amarillo muy claro
-  body.addColorStop(0.40, '#ffe033');   // amarillo medio ← color principal
-  body.addColorStop(0.62, '#ffc200');   // amarillo dorado
-  body.addColorStop(0.80, '#e08800');   // dorado oscuro
-  body.addColorStop(1,    '#7a4000');   // borde marrón dorado (no rojo)
+  body.addColorStop(0,    '#ffffff');
+  body.addColorStop(0.08, '#fffff0');
+  body.addColorStop(0.20, '#ffff99');
+  body.addColorStop(0.40, '#ffe033');
+  body.addColorStop(0.62, '#ffc200');
+  body.addColorStop(0.80, '#e08800');
+  body.addColorStop(1,    '#7a4000');
   ctx.beginPath(); ctx.arc(cx, cy, size, 0, Math.PI * 2);
   ctx.fillStyle = body; ctx.fill();
 
-  // Gránulos de convección — clipeados al círculo, sin manchas
   ctx.save();
   ctx.beginPath(); ctx.arc(cx, cy, size, 0, Math.PI * 2); ctx.clip();
   const numGranules = isMobile ? 18 : 28;
@@ -464,10 +458,8 @@ function loop(now) {
     ctx.beginPath(); ctx.arc(gx, gy, gs, 0, Math.PI * 2);
     ctx.fillStyle = gran; ctx.fill();
   }
-  // SIN manchas solares
   ctx.restore();
 
-  // Reflejo especular
   const spec = ctx.createRadialGradient(
     cx - size * 0.28, cy - size * 0.30, 0,
     cx - size * 0.20, cy - size * 0.20, size * 0.42
@@ -479,15 +471,13 @@ function loop(now) {
   ctx.arc(cx - size * 0.2, cy - size * 0.2, size * 0.42, 0, Math.PI * 2);
   ctx.fillStyle = spec; ctx.fill();
 
-  // Limbo (oscurecimiento natural del borde)
   const limb = ctx.createRadialGradient(cx, cy, size * 0.65, cx, cy, size);
   limb.addColorStop(0,   'rgba(0,0,0,0)');
   limb.addColorStop(0.7, 'rgba(0,0,0,0.06)');
   limb.addColorStop(1,   'rgba(0,0,0,0.35)');
   ctx.beginPath(); ctx.arc(cx, cy, size, 0, Math.PI * 2);
   ctx.fillStyle = limb; ctx.fill();
-
-  // SIN cruz / lens flare
+  */
 
   /* ── FIN ── */
   if (progress >= 0.97 && !ended) { ended = true; running = false; doFlash(); }
@@ -529,10 +519,10 @@ function showFinale() {
 
 /* ── AUDIO ── */
 const audio = new Audio('assets/audio/music.webm');
-audio.volume = 0.1;
+audio.volume = 0.3;
 audio.loop   = true;
 
-/* ── LAUNCH / RESTART ── */
+
 function launch() {
   intro.classList.add('out');
   audio.currentTime = 0;
